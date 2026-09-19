@@ -1,5 +1,7 @@
-
-import { useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 
 import {
   motion,
@@ -72,6 +74,57 @@ const ReportIssue = () => {
     setLocationError,
   ] = useState("");
 
+  const [
+    locationDetected,
+    setLocationDetected,
+  ] = useState(false);
+
+  // =========================================
+  // AI ASSISTANT CONNECTION
+  // =========================================
+
+  useEffect(() => {
+    const handleAssistantReport = (
+      event
+    ) => {
+      const {
+        description:
+          assistantDescription,
+      } =
+        event.detail || {};
+
+      if (
+        assistantDescription
+      ) {
+        setDescription(
+          assistantDescription
+        );
+      }
+
+      setResult(null);
+
+      setSubmittedReport(
+        null
+      );
+    };
+
+    window.addEventListener(
+      "fixmycity-assistant-report",
+      handleAssistantReport
+    );
+
+    return () => {
+      window.removeEventListener(
+        "fixmycity-assistant-report",
+        handleAssistantReport
+      );
+    };
+  }, []);
+
+  // =========================================
+  // IMAGE UPLOAD
+  // =========================================
+
   const handleImageChange = (e) => {
     const file =
       e.target.files?.[0];
@@ -98,6 +151,106 @@ const ReportIssue = () => {
     reader.readAsDataURL(file);
   };
 
+  // =========================================
+  // FORMAT ADDRESS
+  // =========================================
+
+  const formatDetectedAddress = (
+    data
+  ) => {
+    const address =
+      data?.address || {};
+
+    const area =
+      address.suburb ||
+      address.neighbourhood ||
+      address.quarter ||
+      address.residential ||
+      address.hamlet ||
+      address.village ||
+      address.town ||
+      address.city_district ||
+      "";
+
+    const city =
+      address.city ||
+      address.town ||
+      address.municipality ||
+      address.county ||
+      "";
+
+    const state =
+      address.state ||
+      "";
+
+    const country =
+      address.country ||
+      "";
+
+    const parts = [
+      area,
+      city,
+      state,
+      country,
+    ].filter(
+      (item, index, array) =>
+        item &&
+        array.indexOf(item) ===
+          index
+    );
+
+    if (parts.length > 0) {
+      return parts.join(", ");
+    }
+
+    if (data?.display_name) {
+      return data.display_name;
+    }
+
+    return "Current Location";
+  };
+
+  // =========================================
+  // REVERSE GEOCODING
+  // =========================================
+
+  const getAddressFromCoordinates =
+    async (
+      latitude,
+      longitude
+    ) => {
+      try {
+        const response =
+          await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&addressdetails=1`
+          );
+
+        if (!response.ok) {
+          throw new Error(
+            "Unable to detect address"
+          );
+        }
+
+        const data =
+          await response.json();
+
+        return formatDetectedAddress(
+          data
+        );
+      } catch (error) {
+        console.error(
+          "Reverse geocoding error:",
+          error
+        );
+
+        return "Current Location";
+      }
+    };
+
+  // =========================================
+  // CURRENT LOCATION
+  // =========================================
+
   const handleCurrentLocation = () => {
     if (
       !navigator.geolocation
@@ -110,32 +263,52 @@ const ReportIssue = () => {
     }
 
     setGettingLocation(true);
+
+    setLocationDetected(false);
+
     setLocationError("");
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const latitude =
-          position.coords.latitude;
+      async (position) => {
+        try {
+          const latitude =
+            position.coords.latitude;
 
-        const longitude =
-          position.coords.longitude;
+          const longitude =
+            position.coords.longitude;
 
-        setCoordinates({
-          latitude,
-          longitude,
-        });
+          setCoordinates({
+            latitude,
+            longitude,
+          });
 
-        setLocation(
-          `${latitude.toFixed(
-            5
-          )}, ${longitude.toFixed(
-            5
-          )}`
-        );
+          const detectedAddress =
+            await getAddressFromCoordinates(
+              latitude,
+              longitude
+            );
 
-        setGettingLocation(
-          false
-        );
+          setLocation(
+            detectedAddress
+          );
+
+          setLocationDetected(
+            true
+          );
+        } catch (error) {
+          console.error(
+            "Location processing error:",
+            error
+          );
+
+          setLocationError(
+            "Location was detected, but the address could not be identified."
+          );
+        } finally {
+          setGettingLocation(
+            false
+          );
+        }
       },
 
       (error) => {
@@ -144,8 +317,26 @@ const ReportIssue = () => {
           error
         );
 
+        let message =
+          "Unable to access your location.";
+
+        if (error.code === 1) {
+          message =
+            "Location permission was denied. Please allow location access in your browser.";
+        }
+
+        if (error.code === 2) {
+          message =
+            "Your current location is unavailable. Please try again.";
+        }
+
+        if (error.code === 3) {
+          message =
+            "Location detection timed out. Please try again.";
+        }
+
         setLocationError(
-          "Unable to access your location. Please allow location permission."
+          message
         );
 
         setGettingLocation(
@@ -155,11 +346,15 @@ const ReportIssue = () => {
 
       {
         enableHighAccuracy: true,
-        timeout: 10000,
+        timeout: 15000,
         maximumAge: 30000,
       }
     );
   };
+
+  // =========================================
+  // AI ANALYSIS
+  // =========================================
 
   const handleAnalyze = () => {
     if (!imageFile) {
@@ -197,6 +392,10 @@ const ReportIssue = () => {
     }, 2600);
   };
 
+  // =========================================
+  // SUBMIT REPORT
+  // =========================================
+
   const handleSubmitReport =
     () => {
       if (!result) {
@@ -223,6 +422,8 @@ const ReportIssue = () => {
 
             category:
               result.category,
+
+            location,
           });
       }
 
@@ -249,8 +450,14 @@ const ReportIssue = () => {
                 id:
                   assignedDepartment.id,
 
+                city:
+                  assignedDepartment.city,
+
                 name:
                   assignedDepartment.name,
+
+                category:
+                  assignedDepartment.category,
 
                 contact:
                   assignedDepartment.contact,
@@ -261,6 +468,12 @@ const ReportIssue = () => {
                       2
                     )
                   ),
+
+                latitude:
+                  assignedDepartment.latitude,
+
+                longitude:
+                  assignedDepartment.longitude,
               }
             : null,
 
@@ -348,6 +561,10 @@ const ReportIssue = () => {
       );
     };
 
+  // =========================================
+  // COPY COMPLAINT ID
+  // =========================================
+
   const handleCopyId =
     async () => {
       if (
@@ -367,6 +584,10 @@ const ReportIssue = () => {
         );
       }
     };
+
+  // =========================================
+  // RESET
+  // =========================================
 
   const handleReset = () => {
     setImage(null);
@@ -394,6 +615,10 @@ const ReportIssue = () => {
     );
 
     setLocationError("");
+
+    setLocationDetected(
+      false
+    );
   };
 
   return (
@@ -426,28 +651,24 @@ const ReportIssue = () => {
               size={16}
             />
 
-            Smart Civic
-            Reporting
+            Smart Civic Reporting
           </div>
 
           <h2>
             Report It.
 
             <span>
-              Let AI
-              Understand It.
+              Let AI Understand It.
             </span>
           </h2>
 
           <p>
-            Upload a photo of
-            the civic problem.
-            FixMyCity AI
-            analyzes the issue,
-            estimates severity
-            and automatically
-            routes it to the
-            relevant civic
+            Upload a photo of the
+            civic problem. FixMyCity
+            AI analyzes the issue,
+            estimates severity and
+            automatically routes it
+            to the relevant civic
             department.
           </p>
         </motion.div>
@@ -512,12 +733,13 @@ const ReportIssue = () => {
                     value={
                       location
                     }
-                    onChange={(
-                      e
-                    ) => {
+                    onChange={(e) => {
                       setLocation(
-                        e.target
-                          .value
+                        e.target.value
+                      );
+
+                      setLocationDetected(
+                        false
                       );
                     }}
                     placeholder="Enter location or use GPS"
@@ -541,8 +763,7 @@ const ReportIssue = () => {
                         className="spin-icon"
                       />
 
-                      Detecting
-                      Location...
+                      Detecting Location...
                     </>
                   ) : (
                     <>
@@ -550,8 +771,7 @@ const ReportIssue = () => {
                         size={16}
                       />
 
-                      Use Current
-                      Location
+                      Use Current Location
                     </>
                   )}
                 </button>
@@ -564,45 +784,39 @@ const ReportIssue = () => {
                   </div>
                 )}
 
-                {coordinates && (
-                  <div className="coordinate-preview">
-                    <MapPin
-                      size={14}
-                    />
+                {coordinates &&
+                  locationDetected &&
+                  location && (
+                    <div className="detected-location-card">
+                      <MapPin
+                        size={16}
+                      />
 
-                    <span>
-                      Latitude:{" "}
-                      {coordinates.latitude.toFixed(
-                        5
-                      )}
-                    </span>
+                      <div>
+                        <span>
+                          LOCATION DETECTED
+                        </span>
 
-                    <span>
-                      Longitude:{" "}
-                      {coordinates.longitude.toFixed(
-                        5
-                      )}
-                    </span>
-                  </div>
-                )}
+                        <strong>
+                          {location}
+                        </strong>
+                      </div>
+                    </div>
+                  )}
               </div>
 
               <div className="form-group">
                 <label>
-                  Additional
-                  Details
+                  Additional Details
                 </label>
 
                 <textarea
                   value={
                     description
                   }
-                  onChange={(
-                    e
-                  ) =>
+                  onChange={(e) =>
                     setDescription(
-                      e.target
-                        .value
+                      e.target.value
                     )
                   }
                   placeholder="Describe the issue..."
@@ -625,8 +839,7 @@ const ReportIssue = () => {
                       className="spin-icon"
                     />
 
-                    AI
-                    Analyzing...
+                    AI Analyzing...
                   </>
                 ) : (
                   <>
@@ -634,8 +847,7 @@ const ReportIssue = () => {
                       size={18}
                     />
 
-                    Analyze with
-                    AI
+                    Analyze with AI
                   </>
                 )}
               </button>
@@ -694,17 +906,13 @@ const ReportIssue = () => {
                   </div>
 
                   <h4>
-                    Waiting for
-                    an issue
+                    Waiting for an issue
                   </h4>
 
                   <p>
-                    Upload an
-                    image and
-                    click analyze
-                    to see
-                    FixMyCity AI
-                    in action.
+                    Upload an image and
+                    click analyze to see
+                    FixMyCity AI in action.
                   </p>
                 </motion.div>
               )}
@@ -737,8 +945,7 @@ const ReportIssue = () => {
                       <div className="scan-grid"></div>
 
                       <div className="scan-label">
-                        AI VISION
-                        SCAN
+                        AI VISION SCAN
                       </div>
                     </div>
 
@@ -750,15 +957,13 @@ const ReportIssue = () => {
 
                       <div>
                         <strong>
-                          Analyzing
-                          image...
+                          Analyzing image...
                         </strong>
 
                         <span>
-                          Detecting
-                          civic issue,
-                          severity and
-                          priority
+                          Detecting civic
+                          issue, severity
+                          and priority
                         </span>
                       </div>
                     </div>
@@ -789,20 +994,18 @@ const ReportIssue = () => {
                       }
                     />
 
-                    {coordinates && (
-                      <div className="ai-location-ready">
-                        <Navigation
-                          size={
-                            16
-                          }
-                        />
+                    {coordinates &&
+                      location && (
+                        <div className="ai-location-ready">
+                          <Navigation
+                            size={16}
+                          />
 
-                        GPS location
-                        captured and
-                        ready for
-                        civic routing.
-                      </div>
-                    )}
+                          Location detected:
+                          {" "}
+                          {location}
+                        </div>
+                      )}
 
                     <button
                       className="submit-report-button"
@@ -814,8 +1017,7 @@ const ReportIssue = () => {
                         size={17}
                       />
 
-                      Submit Civic
-                      Report
+                      Submit Civic Report
                     </button>
                   </motion.div>
                 )}
@@ -842,30 +1044,25 @@ const ReportIssue = () => {
                   </div>
 
                   <span className="success-label">
-                    REPORT
-                    SUBMITTED
+                    REPORT SUBMITTED
                   </span>
 
                   <h3>
-                    Your issue is
-                    now being
-                    tracked.
+                    Your issue is now
+                    being tracked.
                   </h3>
 
                   <p>
-                    Save your
-                    complaint ID
-                    to check the
-                    progress of
-                    your civic
-                    report.
+                    Save your complaint
+                    ID to check the
+                    progress of your
+                    civic report.
                   </p>
 
                   <div className="complaint-id-box">
                     <div>
                       <span>
-                        Complaint
-                        ID
+                        Complaint ID
                       </span>
 
                       <strong>
@@ -890,8 +1087,7 @@ const ReportIssue = () => {
 
                   <div className="submission-status">
                     <span>
-                      Current
-                      Status
+                      Current Status
                     </span>
 
                     <strong>
@@ -901,11 +1097,28 @@ const ReportIssue = () => {
                     </strong>
                   </div>
 
+                  <div className="submitted-location-card">
+                    <MapPin
+                      size={16}
+                    />
+
+                    <div>
+                      <span>
+                        REPORTED LOCATION
+                      </span>
+
+                      <strong>
+                        {
+                          submittedReport.location
+                        }
+                      </strong>
+                    </div>
+                  </div>
+
                   {submittedReport.assignedDepartment && (
                     <div className="assigned-department-card">
                       <span>
-                        AUTO
-                        ASSIGNED
+                        AUTO ASSIGNED
                         DEPARTMENT
                       </span>
 
@@ -918,6 +1131,11 @@ const ReportIssue = () => {
                       </strong>
 
                       <small>
+                        {submittedReport
+                          .assignedDepartment
+                          .city
+                          ? `${submittedReport.assignedDepartment.city} • `
+                          : ""}
                         {
                           submittedReport
                             .assignedDepartment
@@ -946,15 +1164,13 @@ const ReportIssue = () => {
                       <div>
                         <strong>
                           Department
-                          assignment
-                          pending
+                          assignment pending
                         </strong>
 
                         <span>
-                          Use current
-                          location before
-                          submitting for
-                          automatic civic
+                          Use current location
+                          before submitting
+                          for automatic civic
                           routing.
                         </span>
                       </div>
@@ -966,8 +1182,7 @@ const ReportIssue = () => {
                       href="#track"
                       className="track-report-button"
                     >
-                      Track
-                      Complaint
+                      Track Complaint
                     </a>
 
                     <button
@@ -977,8 +1192,7 @@ const ReportIssue = () => {
                         handleReset
                       }
                     >
-                      Report
-                      Another Issue
+                      Report Another Issue
                     </button>
                   </div>
                 </motion.div>

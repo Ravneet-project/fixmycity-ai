@@ -14,6 +14,7 @@ import {
 
 import issues from "../data/issues";
 import { getSavedReports } from "../utils/reportStorage";
+import CityIssuesMap from "../components/CityIssuesMap";
 
 const filters = [
   "All",
@@ -313,74 +314,7 @@ const ExploreIssues = () => {
               </div>
             </div>
 
-            <div className="fake-map">
-              <div className="map-grid-lines"></div>
-
-              <div className="map-road map-road-1"></div>
-              <div className="map-road map-road-2"></div>
-              <div className="map-road map-road-3"></div>
-              <div className="map-road map-road-4"></div>
-
-              <div className="map-block block-1"></div>
-              <div className="map-block block-2"></div>
-              <div className="map-block block-3"></div>
-              <div className="map-block block-4"></div>
-              <div className="map-block block-5"></div>
-
-              <motion.div
-                animate={{
-                  y: [0, -7, 0],
-                }}
-                transition={{
-                  duration: 2.5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="map-pin map-pin-1"
-              >
-                <MapPin size={17} />
-              </motion.div>
-
-              <motion.div
-                animate={{
-                  y: [0, 7, 0],
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="map-pin map-pin-2"
-              >
-                <MapPin size={17} />
-              </motion.div>
-
-              <motion.div
-                animate={{
-                  y: [0, -6, 0],
-                }}
-                transition={{
-                  duration: 2.8,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="map-pin map-pin-3"
-              >
-                <MapPin size={17} />
-              </motion.div>
-
-              <div className="map-location-label label-1">
-                <strong>Sector 17</strong>
-                <span>8 active issues</span>
-              </div>
-
-              <div className="map-location-label label-2">
-                <strong>Model Town</strong>
-                <span>3 active issues</span>
-              </div>
-
-              <div className="map-center-pulse"></div>
-            </div>
+            <CityIssuesMap />
 
             <div className="map-stats">
               <div>

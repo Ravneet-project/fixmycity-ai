@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 
 import {
@@ -18,6 +17,7 @@ import {
   Building2,
   Navigation,
   Phone,
+  Image as ImageIcon,
 } from "lucide-react";
 
 import {
@@ -26,6 +26,8 @@ import {
 } from "../utils/reportStorage";
 
 import RoutingMap from "../components/RoutingMap";
+
+import BeforeAfterProof from "../components/BeforeAfterProof";
 
 const TrackComplaint = () => {
   const [complaintId, setComplaintId] =
@@ -36,6 +38,15 @@ const TrackComplaint = () => {
 
   const [error, setError] =
     useState("");
+
+  const [
+    resolutionImage,
+    setResolutionImage,
+  ] = useState(null);
+
+  // =========================================
+  // FIND COMPLAINT
+  // =========================================
 
   const findComplaint = () => {
     const id = complaintId
@@ -74,13 +85,59 @@ const TrackComplaint = () => {
 
     setReport(found);
 
+    setResolutionImage(
+      null
+    );
+
     setError("");
   };
+
+  // =========================================
+  // RESOLUTION IMAGE
+  // =========================================
+
+  const handleResolutionImage = (
+    e
+  ) => {
+    const file =
+      e.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    const reader =
+      new FileReader();
+
+    reader.onloadend = () => {
+      setResolutionImage(
+        reader.result
+      );
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  // =========================================
+  // STATUS UPDATE
+  // =========================================
 
   const handleStatusChange = (
     status
   ) => {
     if (!report?.complaintId) {
+      return;
+    }
+
+    if (
+      status === "Resolved" &&
+      !resolutionImage &&
+      !report.resolutionImage
+    ) {
+      alert(
+        "Please upload a resolution proof photo before marking this complaint as resolved."
+      );
+
       return;
     }
 
@@ -160,14 +217,18 @@ const TrackComplaint = () => {
           "Work In Progress",
 
         status:
-          status === "In Progress" ||
-          status === "Resolved"
+          status ===
+            "In Progress" ||
+          status ===
+            "Resolved"
             ? "completed"
             : "pending",
 
         date:
-          status === "In Progress" ||
-          status === "Resolved"
+          status ===
+            "In Progress" ||
+          status ===
+            "Resolved"
             ? now
             : null,
       },
@@ -177,12 +238,14 @@ const TrackComplaint = () => {
           "Resolution",
 
         status:
-          status === "Resolved"
+          status ===
+          "Resolved"
             ? "completed"
             : "pending",
 
         date:
-          status === "Resolved"
+          status ===
+          "Resolved"
             ? now
             : null,
       },
@@ -197,6 +260,20 @@ const TrackComplaint = () => {
 
       updatedAt:
         now,
+
+      resolutionImage:
+        status === "Resolved"
+          ? resolutionImage ||
+            updated.resolutionImage ||
+            null
+          : updated.resolutionImage ||
+            null,
+
+      resolvedAt:
+        status === "Resolved"
+          ? now
+          : updated.resolvedAt ||
+            null,
     };
 
     const allReports =
@@ -224,7 +301,19 @@ const TrackComplaint = () => {
     setReport(
       finalUpdated
     );
+
+    if (
+      status === "Resolved"
+    ) {
+      setResolutionImage(
+        null
+      );
+    }
   };
+
+  // =========================================
+  // STATUS ICON
+  // =========================================
 
   const getStatusIcon = () => {
     if (!report) {
@@ -293,6 +382,7 @@ const TrackComplaint = () => {
 
           <h2>
             Track Your
+
             <span>
               Civic Report.
             </span>
@@ -302,8 +392,8 @@ const TrackComplaint = () => {
             Enter your FixMyCity
             complaint ID to check
             its current status,
-            GPS location, assigned
-            civic department and
+            reported location,
+            assigned department and
             resolution progress.
           </p>
         </motion.div>
@@ -437,7 +527,7 @@ const TrackComplaint = () => {
                   />
 
                   <span>
-                    Location
+                    Reported Location
                   </span>
 
                   <strong>
@@ -496,57 +586,28 @@ const TrackComplaint = () => {
                 </div>
               </div>
 
-              {report.coordinates && (
-                <div className="tracking-location-panel">
-                  <div className="tracking-location-title">
-                    <Navigation
-                      size={18}
-                    />
+              {report.location && (
+                <div className="tracking-address-panel">
+                  <MapPin
+                    size={19}
+                  />
 
-                    <div>
-                      <span>
-                        GPS LOCATION
-                      </span>
+                  <div>
+                    <span>
+                      DETECTED ISSUE LOCATION
+                    </span>
 
-                      <strong>
-                        Civic Issue
-                        Coordinates
-                      </strong>
-                    </div>
-                  </div>
+                    <strong>
+                      {
+                        report.location
+                      }
+                    </strong>
 
-                  <div className="tracking-coordinate-grid">
-                    <div>
-                      <span>
-                        Latitude
-                      </span>
-
-                      <strong>
-                        {Number(
-                          report
-                            .coordinates
-                            .latitude
-                        ).toFixed(
-                          5
-                        )}
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span>
-                        Longitude
-                      </span>
-
-                      <strong>
-                        {Number(
-                          report
-                            .coordinates
-                            .longitude
-                        ).toFixed(
-                          5
-                        )}
-                      </strong>
-                    </div>
+                    <small>
+                      Location coordinates are securely
+                      used in the background for civic
+                      department routing.
+                    </small>
                   </div>
                 </div>
               )}
@@ -614,15 +675,13 @@ const TrackComplaint = () => {
                   <div>
                     <strong>
                       Department
-                      assignment
-                      pending
+                      assignment pending
                     </strong>
 
                     <span>
-                      This report
-                      does not have
-                      GPS-based civic
-                      routing data.
+                      Automatic department
+                      routing was not available
+                      for this report.
                     </span>
                   </div>
                 </div>
@@ -640,11 +699,24 @@ const TrackComplaint = () => {
                   />
                 )}
 
+              {report.status ===
+                "Resolved" &&
+                report.image &&
+                report.resolutionImage && (
+                  <BeforeAfterProof
+                    beforeImage={
+                      report.image
+                    }
+                    afterImage={
+                      report.resolutionImage
+                    }
+                  />
+                )}
+
               <div className="tracked-main-grid">
                 <div className="tracked-timeline-card">
                   <h4>
-                    Resolution
-                    Timeline
+                    Resolution Timeline
                   </h4>
 
                   <div className="tracked-timeline">
@@ -666,15 +738,11 @@ const TrackComplaint = () => {
                             {item.status ===
                             "completed" ? (
                               <CheckCircle2
-                                size={
-                                  16
-                                }
+                                size={16}
                               />
                             ) : (
                               <Clock3
-                                size={
-                                  16
-                                }
+                                size={16}
                               />
                             )}
                           </div>
@@ -806,16 +874,111 @@ const TrackComplaint = () => {
                     </button>
                   </div>
 
+                  <div className="resolution-upload-area">
+                    <div className="resolution-upload-heading">
+                      <CheckCircle2
+                        size={17}
+                      />
+
+                      <div>
+                        <strong>
+                          Resolution Proof
+                        </strong>
+
+                        <span>
+                          Upload a photo
+                          after the issue
+                          has been fixed.
+                        </span>
+                      </div>
+                    </div>
+
+                    {!resolutionImage &&
+                    !report.resolutionImage ? (
+                      <label className="resolution-upload-box">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={
+                            handleResolutionImage
+                          }
+                        />
+
+                        <ImageIcon
+                          size={24}
+                        />
+
+                        <strong>
+                          Upload Fixed Photo
+                        </strong>
+
+                        <span>
+                          JPG, PNG or WEBP
+                        </span>
+                      </label>
+                    ) : (
+                      <div className="resolution-preview">
+                        <img
+                          src={
+                            resolutionImage ||
+                            report.resolutionImage
+                          }
+                          alt="Resolution proof"
+                        />
+
+                        <label>
+                          Change Photo
+
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={
+                              handleResolutionImage
+                            }
+                          />
+                        </label>
+                      </div>
+                    )}
+
+                    {resolutionImage &&
+                      report.status !==
+                        "Resolved" && (
+                        <div className="resolution-ready">
+                          ✓ Resolution photo ready.
+                          Click "Resolved" to save it.
+                        </div>
+                      )}
+
+                    {report.status ===
+                      "Resolved" &&
+                      report.resolutionImage && (
+                        <div className="resolution-saved">
+                          <CheckCircle2
+                            size={14}
+                          />
+
+                          Resolution proof saved
+                          successfully.
+                        </div>
+                      )}
+                  </div>
+
                   {report.image && (
-                    <img
-                      src={
-                        report.image
-                      }
-                      alt={
-                        report.title
-                      }
-                      className="admin-report-image"
-                    />
+                    <div className="original-report-proof">
+                      <span>
+                        ORIGINAL CITIZEN PHOTO
+                      </span>
+
+                      <img
+                        src={
+                          report.image
+                        }
+                        alt={
+                          report.title
+                        }
+                        className="admin-report-image"
+                      />
+                    </div>
                   )}
                 </div>
               </div>

@@ -1,235 +1,335 @@
-import { motion } from "framer-motion";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  Polyline,
+  useMap,
+} from "react-leaflet";
+
+import {
+  divIcon,
+  latLngBounds,
+} from "leaflet";
+
+import {
+  useEffect,
+} from "react";
+
 import {
   Building2,
   MapPin,
   Navigation,
 } from "lucide-react";
 
+import "leaflet/dist/leaflet.css";
+
+const issueIcon = divIcon({
+  className: "custom-map-marker",
+
+  html: `
+    <div class="real-map-marker issue-map-marker">
+      <div class="real-map-marker-pulse"></div>
+      <div class="real-map-marker-dot">●</div>
+    </div>
+  `,
+
+  iconSize: [44, 44],
+
+  iconAnchor: [22, 22],
+});
+
+const departmentIcon = divIcon({
+  className: "custom-map-marker",
+
+  html: `
+    <div class="real-map-marker department-map-marker">
+      <div class="real-map-marker-pulse"></div>
+      <div class="department-map-icon">🏢</div>
+    </div>
+  `,
+
+  iconSize: [46, 46],
+
+  iconAnchor: [23, 23],
+});
+
+const FitMapBounds = ({
+  issuePosition,
+  departmentPosition,
+}) => {
+  const map =
+    useMap();
+
+  useEffect(() => {
+    if (
+      !issuePosition ||
+      !departmentPosition
+    ) {
+      return;
+    }
+
+    const bounds =
+      latLngBounds([
+        issuePosition,
+        departmentPosition,
+      ]);
+
+    map.fitBounds(
+      bounds,
+      {
+        padding: [70, 70],
+
+        maxZoom: 14,
+      }
+    );
+  }, [
+    map,
+    issuePosition,
+    departmentPosition,
+  ]);
+
+  return null;
+};
+
 const RoutingMap = ({
   coordinates,
   department,
 }) => {
-  if (!coordinates || !department) {
+  if (
+    !coordinates ||
+    !department
+  ) {
     return null;
   }
 
+  const issueLatitude =
+    Number(
+      coordinates.latitude
+    );
+
+  const issueLongitude =
+    Number(
+      coordinates.longitude
+    );
+
+  const departmentLatitude =
+    Number(
+      department.latitude
+    );
+
+  const departmentLongitude =
+    Number(
+      department.longitude
+    );
+
+  const hasValidIssueCoordinates =
+    Number.isFinite(
+      issueLatitude
+    ) &&
+    Number.isFinite(
+      issueLongitude
+    );
+
+  const hasValidDepartmentCoordinates =
+    Number.isFinite(
+      departmentLatitude
+    ) &&
+    Number.isFinite(
+      departmentLongitude
+    );
+
+  if (
+    !hasValidIssueCoordinates ||
+    !hasValidDepartmentCoordinates
+  ) {
+    return (
+      <div className="real-routing-map-card">
+        <div className="real-map-error">
+          Map routing data is unavailable for this report.
+        </div>
+      </div>
+    );
+  }
+
+  const issuePosition = [
+    issueLatitude,
+    issueLongitude,
+  ];
+
+  const departmentPosition = [
+    departmentLatitude,
+    departmentLongitude,
+  ];
+
+  const routePositions = [
+    issuePosition,
+    departmentPosition,
+  ];
+
   return (
-    <div className="routing-map-card">
-      <div className="routing-map-header">
+    <div className="real-routing-map-card">
+      <div className="real-routing-map-header">
         <div>
           <span>
-            SMART CIVIC ROUTING
+            LIVE CIVIC ROUTING
           </span>
 
           <h3>
-            Complaint Route
+            Smart Location Map
           </h3>
+
+          <p>
+            Explore the reported civic issue and
+            assigned department on a real interactive map.
+          </p>
         </div>
 
-        <div className="routing-live">
+        <div className="real-map-live">
           <i></i>
-          Active
+
+          LIVE MAP
         </div>
       </div>
 
-      <div className="routing-map">
-        <div className="routing-grid"></div>
-
-        <div className="routing-road routing-road-a"></div>
-        <div className="routing-road routing-road-b"></div>
-        <div className="routing-road routing-road-c"></div>
-        <div className="routing-road routing-road-d"></div>
-
-        <div className="routing-block rb1"></div>
-        <div className="routing-block rb2"></div>
-        <div className="routing-block rb3"></div>
-        <div className="routing-block rb4"></div>
-        <div className="routing-block rb5"></div>
-
-        <svg
-          className="routing-svg"
-          viewBox="0 0 1000 500"
-          preserveAspectRatio="none"
+      <div className="real-map-container">
+        <MapContainer
+          center={
+            issuePosition
+          }
+          zoom={13}
+          scrollWheelZoom={
+            true
+          }
+          className="leaflet-civic-map"
         >
-          <defs>
-            <linearGradient
-              id="routeGradient"
-              x1="0%"
-              y1="0%"
-              x2="100%"
-              y2="0%"
-            >
-              <stop
-                offset="0%"
-                stopColor="#13e9ef"
-              />
+          <TileLayer
+            attribution="&copy; OpenStreetMap contributors"
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
 
-              <stop
-                offset="100%"
-                stopColor="#58f495"
-              />
-            </linearGradient>
-          </defs>
+          <FitMapBounds
+            issuePosition={
+              issuePosition
+            }
+            departmentPosition={
+              departmentPosition
+            }
+          />
 
-          <motion.path
-            d="
-              M 220 340
-              C 350 290,
-                410 185,
-                540 215
-              S 690 335,
-                790 150
-            "
-            fill="none"
-            stroke="url(#routeGradient)"
-            strokeWidth="5"
-            strokeLinecap="round"
-            strokeDasharray="12 12"
-            initial={{
-              pathLength: 0,
-              opacity: 0,
-            }}
-            animate={{
-              pathLength: 1,
-              opacity: 1,
-            }}
-            transition={{
-              duration: 2,
-              ease: "easeInOut",
+          <Marker
+            position={
+              issuePosition
+            }
+            icon={
+              issueIcon
+            }
+          >
+            <Popup>
+              <div className="map-popup-content">
+                <strong>
+                  Issue Location
+                </strong>
+
+                <span>
+                  Reported civic problem
+                </span>
+              </div>
+            </Popup>
+          </Marker>
+
+          <Marker
+            position={
+              departmentPosition
+            }
+            icon={
+              departmentIcon
+            }
+          >
+            <Popup>
+              <div className="map-popup-content">
+                <strong>
+                  {
+                    department.name
+                  }
+                </strong>
+
+                <span>
+                  Assigned Civic Department
+                </span>
+              </div>
+            </Popup>
+          </Marker>
+
+          <Polyline
+            positions={
+              routePositions
+            }
+            pathOptions={{
+              weight: 5,
+
+              opacity: 0.9,
+
+              dashArray:
+                "10 10",
             }}
           />
-        </svg>
+        </MapContainer>
 
-        <motion.div
-          initial={{
-            scale: 0,
-            opacity: 0,
-          }}
-          animate={{
-            scale: 1,
-            opacity: 1,
-          }}
-          transition={{
-            delay: 0.3,
-            type: "spring",
-          }}
-          className="routing-marker citizen-marker"
-        >
-          <div className="marker-pulse"></div>
+        <div className="map-route-overlay">
+          <Navigation
+            size={14}
+          />
 
-          <MapPin size={20} />
-
-          <div className="routing-marker-label">
-            <strong>
-              Issue Location
-            </strong>
-
-            <span>
-              {coordinates.latitude.toFixed(4)},
-              {" "}
-              {coordinates.longitude.toFixed(4)}
-            </span>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{
-            scale: 0,
-            opacity: 0,
-          }}
-          animate={{
-            scale: 1,
-            opacity: 1,
-          }}
-          transition={{
-            delay: 1.3,
-            type: "spring",
-          }}
-          className="routing-marker department-marker"
-        >
-          <div className="marker-pulse"></div>
-
-          <Building2 size={20} />
-
-          <div className="routing-marker-label department-label">
-            <strong>
-              Assigned Department
-            </strong>
-
-            <span>
-              {department.name}
-            </span>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{
-            left: "22%",
-            top: "68%",
-          }}
-          animate={{
-            left: [
-              "22%",
-              "42%",
-              "55%",
-              "68%",
-              "79%",
-            ],
-
-            top: [
-              "68%",
-              "50%",
-              "42%",
-              "55%",
-              "30%",
-            ],
-          }}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-            repeatDelay: 1,
-            ease: "easeInOut",
-          }}
-          className="route-moving-dot"
-        ></motion.div>
-
-        <div className="routing-center-glow"></div>
+          Auto-routed civic issue
+        </div>
       </div>
 
-      <div className="routing-info-grid">
+      <div className="real-map-info-grid">
         <div>
-          <Navigation size={16} />
+          <MapPin
+            size={17}
+          />
 
           <span>
-            Route Distance
+            ISSUE LOCATION
           </span>
 
           <strong>
-            {department.distance} km
+            Reported Location
           </strong>
         </div>
 
         <div>
-          <Building2 size={16} />
+          <Building2
+            size={17}
+          />
 
           <span>
-            Department
+            ASSIGNED TO
           </span>
 
           <strong>
-            {department.name}
+            {
+              department.name
+            }
           </strong>
         </div>
 
         <div>
-          <MapPin size={16} />
+          <Navigation
+            size={17}
+          />
 
           <span>
-            Routing
+            DISTANCE
           </span>
 
           <strong>
-            Auto Assigned
+            {
+              department.distance
+            }{" "}
+            km
           </strong>
         </div>
       </div>
