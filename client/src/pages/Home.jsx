@@ -6,7 +6,7 @@ import ExploreIssues from "../sections/ExploreIssues";
 import ImpactSection from "../sections/ImpactSection";
 import Footer from "../sections/Footer";
 import TrackComplaint from "../sections/TrackComplaint";
-
+import CivicAssistant from "../components/CivicAssistant";
 const Home = () => {
   return (
     <div className="app-shell">
@@ -26,6 +26,7 @@ const Home = () => {
       </main>
 
       <Footer />
+       <CivicAssistant />
     </div>
   );
 };
