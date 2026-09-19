@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+
 import {
   motion,
   AnimatePresence,
@@ -13,6 +14,7 @@ import {
   Send,
   CheckCircle2,
   Copy,
+  Navigation,
 } from "lucide-react";
 
 import UploadBox from "../components/UploadBox";
@@ -27,8 +29,13 @@ import {
   classifyCivicIssue,
 } from "../utils/aiClassifier";
 
+import {
+  findNearestDepartment,
+} from "../utils/departmentResolver";
+
 const ReportIssue = () => {
-  const [image, setImage] = useState(null);
+  const [image, setImage] =
+    useState(null);
 
   const [imageFile, setImageFile] =
     useState(null);
@@ -45,8 +52,25 @@ const ReportIssue = () => {
   const [result, setResult] =
     useState(null);
 
-  const [submittedReport, setSubmittedReport] =
-    useState(null);
+  const [
+    submittedReport,
+    setSubmittedReport,
+  ] = useState(null);
+
+  const [
+    coordinates,
+    setCoordinates,
+  ] = useState(null);
+
+  const [
+    gettingLocation,
+    setGettingLocation,
+  ] = useState(false);
+
+  const [
+    locationError,
+    setLocationError,
+  ] = useState("");
 
   const handleImageChange = (e) => {
     const file =
@@ -65,10 +89,76 @@ const ReportIssue = () => {
       );
 
       setResult(null);
-      setSubmittedReport(null);
+
+      setSubmittedReport(
+        null
+      );
     };
 
     reader.readAsDataURL(file);
+  };
+
+  const handleCurrentLocation = () => {
+    if (
+      !navigator.geolocation
+    ) {
+      setLocationError(
+        "Geolocation is not supported by this browser."
+      );
+
+      return;
+    }
+
+    setGettingLocation(true);
+    setLocationError("");
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const latitude =
+          position.coords.latitude;
+
+        const longitude =
+          position.coords.longitude;
+
+        setCoordinates({
+          latitude,
+          longitude,
+        });
+
+        setLocation(
+          `${latitude.toFixed(
+            5
+          )}, ${longitude.toFixed(
+            5
+          )}`
+        );
+
+        setGettingLocation(
+          false
+        );
+      },
+
+      (error) => {
+        console.error(
+          "Location error:",
+          error
+        );
+
+        setLocationError(
+          "Unable to access your location. Please allow location permission."
+        );
+
+        setGettingLocation(
+          false
+        );
+      },
+
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 30000,
+      }
+    );
   };
 
   const handleAnalyze = () => {
@@ -81,8 +171,12 @@ const ReportIssue = () => {
     }
 
     setAnalyzing(true);
+
     setResult(null);
-    setSubmittedReport(null);
+
+    setSubmittedReport(
+      null
+    );
 
     setTimeout(() => {
       const analysis =
@@ -103,111 +197,156 @@ const ReportIssue = () => {
     }, 2600);
   };
 
-  const handleSubmitReport = () => {
-    if (!result) {
-      return;
-    }
+  const handleSubmitReport =
+    () => {
+      if (!result) {
+        return;
+      }
 
-    const complaintId =
-      generateComplaintId();
+      const complaintId =
+        generateComplaintId();
 
-    const now =
-      new Date().toISOString();
+      const now =
+        new Date().toISOString();
 
-    const newReport = {
-      id: Date.now(),
+      let assignedDepartment =
+        null;
 
-      complaintId,
+      if (coordinates) {
+        assignedDepartment =
+          findNearestDepartment({
+            latitude:
+              coordinates.latitude,
 
-      title:
-        result.issue,
+            longitude:
+              coordinates.longitude,
 
-      category:
-        result.category,
+            category:
+              result.category,
+          });
+      }
 
-      location:
-        location ||
-        "Location not specified",
+      const newReport = {
+        id: Date.now(),
 
-      description:
-        description ||
-        result.description,
+        complaintId,
 
-      status:
-        "Reported",
+        title:
+          result.issue,
 
-      severity:
-        result.severity,
+        category:
+          result.category,
 
-      priority:
-        result.priority,
+        location:
+          location ||
+          "Location not specified",
 
-      confidence:
-        result.confidence,
+        coordinates,
 
-      image,
+        assignedDepartment:
+          assignedDepartment
+            ? {
+                id:
+                  assignedDepartment.id,
 
-      createdAt:
-        now,
+                name:
+                  assignedDepartment.name,
 
-      updatedAt:
-        now,
+                contact:
+                  assignedDepartment.contact,
 
-      timeline: [
-        {
-          title:
-            "Issue Reported",
+                distance:
+                  Number(
+                    assignedDepartment.distance.toFixed(
+                      2
+                    )
+                  ),
+              }
+            : null,
 
-          status:
-            "completed",
+        description:
+          description ||
+          result.description,
 
-          date:
-            now,
-        },
+        status:
+          "Reported",
 
-        {
-          title:
-            "AI Verification",
+        severity:
+          result.severity,
 
-          status:
-            "completed",
+        priority:
+          result.priority,
 
-          date:
-            now,
-        },
+        confidence:
+          result.confidence,
 
-        {
-          title:
-            "Department Review",
+        image,
 
-          status:
-            "pending",
+        createdAt:
+          now,
 
-          date:
-            null,
-        },
+        updatedAt:
+          now,
 
-        {
-          title:
-            "Resolution",
+        timeline: [
+          {
+            title:
+              "Issue Reported",
 
-          status:
-            "pending",
+            status:
+              "completed",
 
-          date:
-            null,
-        },
-      ],
+            date:
+              now,
+          },
+
+          {
+            title:
+              "AI Verification",
+
+            status:
+              "completed",
+
+            date:
+              now,
+          },
+
+          {
+            title:
+              "Department Assigned",
+
+            status:
+              assignedDepartment
+                ? "completed"
+                : "pending",
+
+            date:
+              assignedDepartment
+                ? now
+                : null,
+          },
+
+          {
+            title:
+              "Resolution",
+
+            status:
+              "pending",
+
+            date:
+              null,
+          },
+        ],
+      };
+
+      saveReport(
+        newReport
+      );
+
+      setSubmittedReport(
+        newReport
+      );
     };
-
-    saveReport(
-      newReport
-    );
-
-    setSubmittedReport(
-      newReport
-    );
-  };
 
   const handleCopyId =
     async () => {
@@ -229,16 +368,33 @@ const ReportIssue = () => {
       }
     };
 
-  const handleReset =
-    () => {
-      setImage(null);
-      setImageFile(null);
-      setLocation("");
-      setDescription("");
-      setAnalyzing(false);
-      setResult(null);
-      setSubmittedReport(null);
-    };
+  const handleReset = () => {
+    setImage(null);
+
+    setImageFile(null);
+
+    setLocation("");
+
+    setDescription("");
+
+    setAnalyzing(false);
+
+    setResult(null);
+
+    setSubmittedReport(
+      null
+    );
+
+    setCoordinates(
+      null
+    );
+
+    setGettingLocation(
+      false
+    );
+
+    setLocationError("");
+  };
 
   return (
     <section
@@ -266,26 +422,33 @@ const ReportIssue = () => {
           className="report-heading"
         >
           <div className="section-badge">
-            <Sparkles size={16} />
+            <Sparkles
+              size={16}
+            />
 
-            Smart Civic Reporting
+            Smart Civic
+            Reporting
           </div>
 
           <h2>
             Report It.
 
             <span>
-              Let AI Understand It.
+              Let AI
+              Understand It.
             </span>
           </h2>
 
           <p>
-            Upload a photo of the
-            civic problem. FixMyCity
-            AI analyzes the issue,
-            estimates severity and
-            prepares the report
-            automatically.
+            Upload a photo of
+            the civic problem.
+            FixMyCity AI
+            analyzes the issue,
+            estimates severity
+            and automatically
+            routes it to the
+            relevant civic
+            department.
           </p>
         </motion.div>
 
@@ -346,27 +509,100 @@ const ReportIssue = () => {
 
                   <input
                     type="text"
-                    value={location}
-                    onChange={(e) =>
-                      setLocation(
-                        e.target.value
-                      )
+                    value={
+                      location
                     }
-                    placeholder="Enter location or area"
+                    onChange={(
+                      e
+                    ) => {
+                      setLocation(
+                        e.target
+                          .value
+                      );
+                    }}
+                    placeholder="Enter location or use GPS"
                   />
                 </div>
+
+                <button
+                  type="button"
+                  className="current-location-button"
+                  onClick={
+                    handleCurrentLocation
+                  }
+                  disabled={
+                    gettingLocation
+                  }
+                >
+                  {gettingLocation ? (
+                    <>
+                      <LoaderCircle
+                        size={16}
+                        className="spin-icon"
+                      />
+
+                      Detecting
+                      Location...
+                    </>
+                  ) : (
+                    <>
+                      <Navigation
+                        size={16}
+                      />
+
+                      Use Current
+                      Location
+                    </>
+                  )}
+                </button>
+
+                {locationError && (
+                  <div className="location-error">
+                    {
+                      locationError
+                    }
+                  </div>
+                )}
+
+                {coordinates && (
+                  <div className="coordinate-preview">
+                    <MapPin
+                      size={14}
+                    />
+
+                    <span>
+                      Latitude:{" "}
+                      {coordinates.latitude.toFixed(
+                        5
+                      )}
+                    </span>
+
+                    <span>
+                      Longitude:{" "}
+                      {coordinates.longitude.toFixed(
+                        5
+                      )}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="form-group">
                 <label>
-                  Additional Details
+                  Additional
+                  Details
                 </label>
 
                 <textarea
-                  value={description}
-                  onChange={(e) =>
+                  value={
+                    description
+                  }
+                  onChange={(
+                    e
+                  ) =>
                     setDescription(
-                      e.target.value
+                      e.target
+                        .value
                     )
                   }
                   placeholder="Describe the issue..."
@@ -389,7 +625,8 @@ const ReportIssue = () => {
                       className="spin-icon"
                     />
 
-                    AI Analyzing...
+                    AI
+                    Analyzing...
                   </>
                 ) : (
                   <>
@@ -397,7 +634,8 @@ const ReportIssue = () => {
                       size={18}
                     />
 
-                    Analyze with AI
+                    Analyze with
+                    AI
                   </>
                 )}
               </button>
@@ -456,13 +694,17 @@ const ReportIssue = () => {
                   </div>
 
                   <h4>
-                    Waiting for an issue
+                    Waiting for
+                    an issue
                   </h4>
 
                   <p>
-                    Upload an image and
-                    click analyze to see
-                    FixMyCity AI in action.
+                    Upload an
+                    image and
+                    click analyze
+                    to see
+                    FixMyCity AI
+                    in action.
                   </p>
                 </motion.div>
               )}
@@ -484,7 +726,9 @@ const ReportIssue = () => {
                   >
                     <div className="scan-preview">
                       <img
-                        src={image}
+                        src={
+                          image
+                        }
                         alt="Scanning"
                       />
 
@@ -493,7 +737,8 @@ const ReportIssue = () => {
                       <div className="scan-grid"></div>
 
                       <div className="scan-label">
-                        AI VISION SCAN
+                        AI VISION
+                        SCAN
                       </div>
                     </div>
 
@@ -505,13 +750,15 @@ const ReportIssue = () => {
 
                       <div>
                         <strong>
-                          Analyzing image...
+                          Analyzing
+                          image...
                         </strong>
 
                         <span>
-                          Detecting civic
-                          issue, severity
-                          and priority
+                          Detecting
+                          civic issue,
+                          severity and
+                          priority
                         </span>
                       </div>
                     </div>
@@ -542,6 +789,21 @@ const ReportIssue = () => {
                       }
                     />
 
+                    {coordinates && (
+                      <div className="ai-location-ready">
+                        <Navigation
+                          size={
+                            16
+                          }
+                        />
+
+                        GPS location
+                        captured and
+                        ready for
+                        civic routing.
+                      </div>
+                    )}
+
                     <button
                       className="submit-report-button"
                       onClick={
@@ -552,7 +814,8 @@ const ReportIssue = () => {
                         size={17}
                       />
 
-                      Submit Civic Report
+                      Submit Civic
+                      Report
                     </button>
                   </motion.div>
                 )}
@@ -579,25 +842,30 @@ const ReportIssue = () => {
                   </div>
 
                   <span className="success-label">
-                    REPORT SUBMITTED
+                    REPORT
+                    SUBMITTED
                   </span>
 
                   <h3>
-                    Your issue is now
-                    being tracked.
+                    Your issue is
+                    now being
+                    tracked.
                   </h3>
 
                   <p>
-                    Save your complaint
-                    ID to check the
-                    progress of your
-                    civic report.
+                    Save your
+                    complaint ID
+                    to check the
+                    progress of
+                    your civic
+                    report.
                   </p>
 
                   <div className="complaint-id-box">
                     <div>
                       <span>
-                        Complaint ID
+                        Complaint
+                        ID
                       </span>
 
                       <strong>
@@ -622,7 +890,8 @@ const ReportIssue = () => {
 
                   <div className="submission-status">
                     <span>
-                      Current Status
+                      Current
+                      Status
                     </span>
 
                     <strong>
@@ -632,12 +901,73 @@ const ReportIssue = () => {
                     </strong>
                   </div>
 
+                  {submittedReport.assignedDepartment && (
+                    <div className="assigned-department-card">
+                      <span>
+                        AUTO
+                        ASSIGNED
+                        DEPARTMENT
+                      </span>
+
+                      <strong>
+                        {
+                          submittedReport
+                            .assignedDepartment
+                            .name
+                        }
+                      </strong>
+
+                      <small>
+                        {
+                          submittedReport
+                            .assignedDepartment
+                            .distance
+                        }{" "}
+                        km away
+                      </small>
+
+                      <div className="department-contact">
+                        Contact:{" "}
+                        {
+                          submittedReport
+                            .assignedDepartment
+                            .contact
+                        }
+                      </div>
+                    </div>
+                  )}
+
+                  {!submittedReport.assignedDepartment && (
+                    <div className="department-pending-card">
+                      <MapPin
+                        size={16}
+                      />
+
+                      <div>
+                        <strong>
+                          Department
+                          assignment
+                          pending
+                        </strong>
+
+                        <span>
+                          Use current
+                          location before
+                          submitting for
+                          automatic civic
+                          routing.
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="report-success-actions">
                     <a
                       href="#track"
                       className="track-report-button"
                     >
-                      Track Complaint
+                      Track
+                      Complaint
                     </a>
 
                     <button
@@ -647,7 +977,8 @@ const ReportIssue = () => {
                         handleReset
                       }
                     >
-                      Report Another Issue
+                      Report
+                      Another Issue
                     </button>
                   </div>
                 </motion.div>
@@ -659,6 +990,5 @@ const ReportIssue = () => {
     </section>
   );
 };
-
 
 export default ReportIssue;

@@ -5904,3 +5904,973 @@ a {
   transition:
     width 1s ease;
 }
+.current-location-button {
+  width: 100%;
+
+  min-height: 42px;
+
+  margin-top: 9px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  border-radius: 10px;
+
+  color: #43eac8;
+
+  background:
+    rgba(48, 231, 196, 0.05);
+
+  border:
+    1px solid
+      rgba(48, 231, 196, 0.14);
+
+  font-size: 11px;
+  font-weight: 700;
+
+  transition: 0.2s;
+}
+
+.current-location-button:hover {
+  background:
+    rgba(48, 231, 196, 0.1);
+
+  transform:
+    translateY(-1px);
+}
+
+.current-location-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.coordinate-preview {
+  margin-top: 9px;
+
+  padding: 9px 11px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  flex-wrap: wrap;
+
+  border-radius: 9px;
+
+  color: #7395a5;
+
+  background:
+    rgba(7, 24, 35, 0.6);
+
+  font-size: 9px;
+}
+
+.coordinate-preview svg {
+  color: #43eac8;
+}
+
+.location-error {
+  margin-top: 8px;
+
+  color: #ff8e78;
+
+  font-size: 10px;
+}
+
+.assigned-department-card {
+  width: 100%;
+
+  margin-top: 13px;
+
+  padding: 15px;
+
+  border-radius: 12px;
+
+  text-align: left;
+
+  background:
+    rgba(67, 234, 197, 0.05);
+
+  border:
+    1px solid
+      rgba(67, 234, 197, 0.12);
+}
+
+.assigned-department-card span {
+  display: block;
+
+  color: #45eac7;
+
+  font-size: 8px;
+
+  font-weight: 800;
+
+  letter-spacing: 1px;
+}
+
+.assigned-department-card strong {
+  display: block;
+
+  margin-top: 7px;
+
+  font-size: 13px;
+}
+
+.assigned-department-card small {
+  display: block;
+
+  margin-top: 5px;
+
+  color: #718996;
+
+  font-size: 9px;
+}
+/* =========================
+   TRACK GPS + DEPARTMENT
+========================= */
+
+.tracking-location-panel {
+  margin-top: 20px;
+  padding: 18px;
+
+  border-radius: 14px;
+
+  background:
+    rgba(7, 25, 37, 0.68);
+
+  border:
+    1px solid rgba(
+      62,
+      224,
+      203,
+      0.11
+    );
+}
+
+.tracking-location-title {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  color: #43eac8;
+}
+
+.tracking-location-title span {
+  display: block;
+
+  font-size: 8px;
+  font-weight: 800;
+
+  letter-spacing: 1.2px;
+}
+
+.tracking-location-title strong {
+  display: block;
+
+  margin-top: 4px;
+
+  color: #e9f7fa;
+
+  font-size: 13px;
+}
+
+.tracking-coordinate-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, 1fr);
+
+  gap: 10px;
+
+  margin-top: 15px;
+}
+
+.tracking-coordinate-grid div {
+  padding: 13px;
+
+  border-radius: 10px;
+
+  background:
+    rgba(3, 15, 23, 0.65);
+
+  border:
+    1px solid rgba(
+      101,
+      161,
+      190,
+      0.08
+    );
+}
+
+.tracking-coordinate-grid span {
+  display: block;
+
+  color: #607987;
+
+  font-size: 8px;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.8px;
+}
+
+.tracking-coordinate-grid strong {
+  display: block;
+
+  margin-top: 5px;
+
+  font-size: 12px;
+}
+
+/* DEPARTMENT */
+
+.tracking-department-panel {
+  margin-top: 14px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 15px;
+
+  padding: 18px;
+
+  border-radius: 14px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(
+        48,
+        235,
+        197,
+        0.07
+      ),
+      rgba(
+        44,
+        132,
+        255,
+        0.05
+      )
+    );
+
+  border:
+    1px solid rgba(
+      64,
+      235,
+      203,
+      0.14
+    );
+}
+
+.tracking-department-icon {
+  width: 48px;
+  height: 48px;
+
+  flex-shrink: 0;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 13px;
+
+  color: #47ecc8;
+
+  background:
+    rgba(
+      58,
+      233,
+      199,
+      0.08
+    );
+
+  border:
+    1px solid rgba(
+      58,
+      233,
+      199,
+      0.13
+    );
+}
+
+.tracking-department-content {
+  flex: 1;
+}
+
+.tracking-department-content
+  > span {
+  display: block;
+
+  color: #44e9c5;
+
+  font-size: 8px;
+  font-weight: 800;
+
+  letter-spacing: 1.2px;
+}
+
+.tracking-department-content h4 {
+  margin-top: 6px;
+
+  font-family:
+    "Manrope";
+
+  font-size: 16px;
+}
+
+.department-meta-row {
+  display: flex;
+  align-items: center;
+
+  flex-wrap: wrap;
+
+  gap: 15px;
+
+  margin-top: 9px;
+}
+
+.department-meta-row div {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  color: #748d9b;
+
+  font-size: 9px;
+}
+
+.department-meta-row svg {
+  color: #45e6c4;
+}
+
+.tracking-no-department {
+  margin-top: 14px;
+
+  padding: 15px;
+
+  display: flex;
+  align-items: flex-start;
+
+  gap: 10px;
+
+  border-radius: 12px;
+
+  color: #ffc76c;
+
+  background:
+    rgba(
+      255,
+      188,
+      76,
+      0.05
+    );
+
+  border:
+    1px solid rgba(
+      255,
+      188,
+      76,
+      0.11
+    );
+}
+
+.tracking-no-department strong {
+  display: block;
+
+  font-size: 11px;
+}
+
+.tracking-no-department span {
+  display: block;
+
+  margin-top: 4px;
+
+  color: #718894;
+
+  font-size: 9px;
+}
+
+@media (max-width: 650px) {
+  .tracking-coordinate-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+  .tracking-department-panel {
+    align-items:
+      flex-start;
+  }
+
+  .department-meta-row {
+    flex-direction:
+      column;
+
+    align-items:
+      flex-start;
+
+    gap: 7px;
+  }
+}
+/* =========================
+   SMART ROUTING MAP
+========================= */
+
+.routing-map-card {
+  margin-top: 20px;
+
+  padding: 22px;
+
+  border-radius: 18px;
+
+  background:
+    rgba(5, 20, 31, 0.75);
+
+  border:
+    1px solid rgba(
+      89,
+      177,
+      208,
+      0.12
+    );
+
+  overflow: hidden;
+}
+
+.routing-map-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.routing-map-header span {
+  color: #46eac8;
+
+  font-size: 8px;
+  font-weight: 800;
+
+  letter-spacing: 1.4px;
+}
+
+.routing-map-header h3 {
+  margin-top: 5px;
+
+  font-family: "Manrope";
+
+  font-size: 20px;
+}
+
+.routing-live {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  padding: 7px 10px;
+
+  border-radius: 30px;
+
+  color: #4bef9e;
+
+  background:
+    rgba(75, 239, 158, 0.06);
+
+  border:
+    1px solid rgba(
+      75,
+      239,
+      158,
+      0.12
+    );
+
+  font-size: 9px;
+}
+
+.routing-live i {
+  width: 6px;
+  height: 6px;
+
+  border-radius: 50%;
+
+  background: #4bef9e;
+
+  box-shadow:
+    0 0 12px #4bef9e;
+}
+
+.routing-map {
+  position: relative;
+
+  height: 420px;
+
+  margin-top: 18px;
+
+  border-radius: 16px;
+
+  overflow: hidden;
+
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(32, 124, 141, 0.12),
+      transparent 40%
+    ),
+    linear-gradient(
+      145deg,
+      #06131d,
+      #071824
+    );
+
+  border:
+    1px solid rgba(
+      82,
+      158,
+      191,
+      0.12
+    );
+}
+
+.routing-grid {
+  position: absolute;
+  inset: 0;
+
+  background-image:
+    linear-gradient(
+      rgba(
+        63,
+        135,
+        161,
+        0.07
+      ) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(
+        63,
+        135,
+        161,
+        0.07
+      ) 1px,
+      transparent 1px
+    );
+
+  background-size:
+    42px 42px;
+}
+
+.routing-road {
+  position: absolute;
+
+  border-radius: 20px;
+
+  background:
+    rgba(
+      88,
+      124,
+      143,
+      0.18
+    );
+}
+
+.routing-road-a {
+  width: 120%;
+  height: 13px;
+
+  left: -10%;
+  top: 115px;
+
+  transform:
+    rotate(16deg);
+}
+
+.routing-road-b {
+  width: 120%;
+  height: 12px;
+
+  left: -8%;
+  top: 270px;
+
+  transform:
+    rotate(-22deg);
+}
+
+.routing-road-c {
+  width: 12px;
+  height: 130%;
+
+  left: 40%;
+  top: -15%;
+
+  transform:
+    rotate(7deg);
+}
+
+.routing-road-d {
+  width: 11px;
+  height: 130%;
+
+  right: 27%;
+  top: -15%;
+
+  transform:
+    rotate(-12deg);
+}
+
+.routing-block {
+  position: absolute;
+
+  border-radius: 10px;
+
+  background:
+    rgba(
+      24,
+      53,
+      69,
+      0.72
+    );
+
+  border:
+    1px solid rgba(
+      70,
+      133,
+      159,
+      0.09
+    );
+}
+
+.rb1 {
+  width: 110px;
+  height: 75px;
+
+  left: 45px;
+  top: 45px;
+}
+
+.rb2 {
+  width: 130px;
+  height: 85px;
+
+  right: 60px;
+  top: 45px;
+}
+
+.rb3 {
+  width: 100px;
+  height: 80px;
+
+  left: 100px;
+  bottom: 40px;
+}
+
+.rb4 {
+  width: 130px;
+  height: 75px;
+
+  right: 90px;
+  bottom: 50px;
+}
+
+.rb5 {
+  width: 90px;
+  height: 65px;
+
+  left: 47%;
+  top: 44%;
+}
+
+.routing-svg {
+  position: absolute;
+
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  pointer-events: none;
+
+  z-index: 3;
+}
+
+.routing-marker {
+  position: absolute;
+
+  z-index: 6;
+
+  width: 42px;
+  height: 42px;
+
+  border-radius: 50%;
+
+  display: grid;
+  place-items: center;
+
+  color: #04171b;
+
+  background:
+    linear-gradient(
+      135deg,
+      #15e7ec,
+      #51f59a
+    );
+
+  box-shadow:
+    0 0 30px
+      rgba(
+        45,
+        236,
+        204,
+        0.3
+      );
+}
+
+.citizen-marker {
+  left: 20%;
+  top: 64%;
+}
+
+.department-marker {
+  right: 18%;
+  top: 25%;
+
+  background:
+    linear-gradient(
+      135deg,
+      #8470ff,
+      #30b8ff
+    );
+
+  box-shadow:
+    0 0 30px
+      rgba(
+        102,
+        109,
+        255,
+        0.3
+      );
+}
+
+.marker-pulse {
+  position: absolute;
+
+  width: 100%;
+  height: 100%;
+
+  border-radius: 50%;
+
+  border:
+    1px solid
+      rgba(
+        66,
+        239,
+        205,
+        0.5
+      );
+
+  animation:
+    routingPulse
+    2s infinite;
+}
+
+@keyframes routingPulse {
+  0% {
+    transform:
+      scale(1);
+
+    opacity: 0.8;
+  }
+
+  100% {
+    transform:
+      scale(2.3);
+
+    opacity: 0;
+  }
+}
+
+.routing-marker-label {
+  position: absolute;
+
+  left: 50px;
+
+  width: 145px;
+
+  padding: 9px 10px;
+
+  border-radius: 9px;
+
+  background:
+    rgba(
+      3,
+      15,
+      23,
+      0.9
+    );
+
+  border:
+    1px solid rgba(
+      79,
+      176,
+      197,
+      0.13
+    );
+
+  backdrop-filter:
+    blur(10px);
+}
+
+.routing-marker-label strong {
+  display: block;
+
+  color: #eaf8fb;
+
+  font-size: 9px;
+}
+
+.routing-marker-label span {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #6e8794;
+
+  font-size: 8px;
+}
+
+.department-label {
+  left: auto;
+  right: 50px;
+
+  text-align: right;
+}
+
+.route-moving-dot {
+  position: absolute;
+
+  z-index: 8;
+
+  width: 9px;
+  height: 9px;
+
+  border-radius: 50%;
+
+  background:
+    #64ffab;
+
+  box-shadow:
+    0 0 18px #64ffab;
+
+  transform:
+    translate(
+      -50%,
+      -50%
+    );
+}
+
+.routing-center-glow {
+  position: absolute;
+
+  width: 230px;
+  height: 230px;
+
+  left: 50%;
+  top: 50%;
+
+  transform:
+    translate(
+      -50%,
+      -50%
+    );
+
+  border-radius: 50%;
+
+  background:
+    rgba(
+      48,
+      232,
+      203,
+      0.04
+    );
+
+  filter:
+    blur(35px);
+}
+
+.routing-info-grid {
+  display: grid;
+
+  grid-template-columns:
+    0.7fr 1.5fr 0.8fr;
+
+  gap: 10px;
+
+  margin-top: 14px;
+}
+
+.routing-info-grid div {
+  padding: 13px;
+
+  border-radius: 11px;
+
+  background:
+    rgba(
+      4,
+      16,
+      25,
+      0.65
+    );
+
+  border:
+    1px solid rgba(
+      88,
+      148,
+      176,
+      0.08
+    );
+}
+
+.routing-info-grid svg {
+  color: #44eac8;
+}
+
+.routing-info-grid span {
+  display: block;
+
+  margin-top: 7px;
+
+  color: #607986;
+
+  font-size: 8px;
+
+  text-transform:
+    uppercase;
+}
+
+.routing-info-grid strong {
+  display: block;
+
+  margin-top: 4px;
+
+  font-size: 10px;
+
+  line-height: 1.4;
+}
+
+@media (max-width: 700px) {
+  .routing-map {
+    height: 350px;
+  }
+
+  .routing-info-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+  .routing-marker-label {
+    width: 110px;
+  }
+}

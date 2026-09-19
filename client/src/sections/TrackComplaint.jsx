@@ -1,5 +1,10 @@
+
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+
+import {
+  motion,
+  AnimatePresence,
+} from "framer-motion";
 
 import {
   Search,
@@ -10,6 +15,9 @@ import {
   ShieldCheck,
   Wrench,
   XCircle,
+  Building2,
+  Navigation,
+  Phone,
 } from "lucide-react";
 
 import {
@@ -17,134 +25,239 @@ import {
   updateReportStatus,
 } from "../utils/reportStorage";
 
+import RoutingMap from "../components/RoutingMap";
+
 const TrackComplaint = () => {
-  const [complaintId, setComplaintId] = useState("");
-  const [report, setReport] = useState(null);
-  const [error, setError] = useState("");
+  const [complaintId, setComplaintId] =
+    useState("");
+
+  const [report, setReport] =
+    useState(null);
+
+  const [error, setError] =
+    useState("");
 
   const findComplaint = () => {
-    const id = complaintId.trim().toUpperCase();
+    const id = complaintId
+      .trim()
+      .toUpperCase();
 
     if (!id) {
-      setError("Please enter a complaint ID.");
+      setError(
+        "Please enter a complaint ID."
+      );
+
       setReport(null);
+
       return;
     }
 
-    const reports = getSavedReports();
+    const reports =
+      getSavedReports();
 
-    const found = reports.find(
-      (item) =>
-        item.complaintId?.toUpperCase() === id
-    );
+    const found =
+      reports.find(
+        (item) =>
+          item.complaintId
+            ?.toUpperCase() === id
+      );
 
     if (!found) {
-      setError("No complaint found with this ID.");
+      setError(
+        "No complaint found with this ID."
+      );
+
       setReport(null);
+
       return;
     }
 
     setReport(found);
+
     setError("");
   };
 
-  const handleStatusChange = (status) => {
-    if (!report?.complaintId) return;
+  const handleStatusChange = (
+    status
+  ) => {
+    if (!report?.complaintId) {
+      return;
+    }
 
     updateReportStatus(
       report.complaintId,
       status
     );
 
-    const reports = getSavedReports();
+    const reports =
+      getSavedReports();
 
-    const updated = reports.find(
-      (item) =>
-        item.complaintId ===
-        report.complaintId
+    const updated =
+      reports.find(
+        (item) =>
+          item.complaintId ===
+          report.complaintId
+      );
+
+    if (!updated) {
+      return;
+    }
+
+    const now =
+      new Date().toISOString();
+
+    const hasDepartment =
+      Boolean(
+        updated.assignedDepartment
+      );
+
+    const timeline = [
+      {
+        title:
+          "Issue Reported",
+
+        status:
+          "completed",
+
+        date:
+          report.timeline?.[0]
+            ?.date ||
+          report.createdAt,
+      },
+
+      {
+        title:
+          "AI Verification",
+
+        status:
+          "completed",
+
+        date:
+          report.timeline?.[1]
+            ?.date ||
+          report.createdAt,
+      },
+
+      {
+        title:
+          "Department Assigned",
+
+        status:
+          hasDepartment
+            ? "completed"
+            : "pending",
+
+        date:
+          hasDepartment
+            ? report.timeline?.[2]
+                ?.date ||
+              report.createdAt
+            : null,
+      },
+
+      {
+        title:
+          "Work In Progress",
+
+        status:
+          status === "In Progress" ||
+          status === "Resolved"
+            ? "completed"
+            : "pending",
+
+        date:
+          status === "In Progress" ||
+          status === "Resolved"
+            ? now
+            : null,
+      },
+
+      {
+        title:
+          "Resolution",
+
+        status:
+          status === "Resolved"
+            ? "completed"
+            : "pending",
+
+        date:
+          status === "Resolved"
+            ? now
+            : null,
+      },
+    ];
+
+    const finalUpdated = {
+      ...updated,
+
+      status,
+
+      timeline,
+
+      updatedAt:
+        now,
+    };
+
+    const allReports =
+      reports.map(
+        (item) =>
+          item.complaintId ===
+          report.complaintId
+            ? finalUpdated
+            : item
+      );
+
+    localStorage.setItem(
+      "fixmycity_reports",
+      JSON.stringify(
+        allReports
+      )
     );
 
-    if (updated) {
-      const now = new Date().toISOString();
+    window.dispatchEvent(
+      new Event(
+        "fixmycity-reports-updated"
+      )
+    );
 
-      let timeline = [
-        {
-          title: "Issue Reported",
-          status: "completed",
-          date:
-            report.timeline?.[0]?.date ||
-            report.createdAt,
-        },
-        {
-          title: "AI Verification",
-          status: "completed",
-          date:
-            report.timeline?.[1]?.date ||
-            report.createdAt,
-        },
-        {
-          title: "Department Review",
-          status:
-            status === "In Progress" ||
-            status === "Resolved"
-              ? "completed"
-              : "pending",
-          date:
-            status === "In Progress" ||
-            status === "Resolved"
-              ? now
-              : null,
-        },
-        {
-          title: "Resolution",
-          status:
-            status === "Resolved"
-              ? "completed"
-              : "pending",
-          date:
-            status === "Resolved"
-              ? now
-              : null,
-        },
-      ];
-
-      const finalUpdated = {
-        ...updated,
-        timeline,
-      };
-
-      const allReports = reports.map((item) =>
-        item.complaintId ===
-        report.complaintId
-          ? finalUpdated
-          : item
-      );
-
-      localStorage.setItem(
-        "fixmycity_reports",
-        JSON.stringify(allReports)
-      );
-
-      window.dispatchEvent(
-        new Event("fixmycity-reports-updated")
-      );
-
-      setReport(finalUpdated);
-    }
+    setReport(
+      finalUpdated
+    );
   };
 
   const getStatusIcon = () => {
-    if (!report) return null;
-
-    if (report.status === "Resolved") {
-      return <CheckCircle2 size={24} />;
+    if (!report) {
+      return null;
     }
 
-    if (report.status === "In Progress") {
-      return <Wrench size={24} />;
+    if (
+      report.status ===
+      "Resolved"
+    ) {
+      return (
+        <CheckCircle2
+          size={24}
+        />
+      );
     }
 
-    return <Clock3 size={24} />;
+    if (
+      report.status ===
+      "In Progress"
+    ) {
+      return (
+        <Wrench
+          size={24}
+        />
+      );
+    }
+
+    return (
+      <Clock3
+        size={24}
+      />
+    );
   };
 
   return (
@@ -162,25 +275,36 @@ const TrackComplaint = () => {
             opacity: 1,
             y: 0,
           }}
-          viewport={{ once: true }}
+          viewport={{
+            once: true,
+          }}
           transition={{
             duration: 0.7,
           }}
           className="track-heading"
         >
           <div className="section-badge">
-            <Search size={16} />
+            <Search
+              size={16}
+            />
+
             Complaint Tracking
           </div>
 
           <h2>
             Track Your
-            <span>Civic Report.</span>
+            <span>
+              Civic Report.
+            </span>
           </h2>
 
           <p>
-            Enter your FixMyCity complaint ID to check
-            its current status and resolution progress.
+            Enter your FixMyCity
+            complaint ID to check
+            its current status,
+            GPS location, assigned
+            civic department and
+            resolution progress.
           </p>
         </motion.div>
 
@@ -193,7 +317,9 @@ const TrackComplaint = () => {
             opacity: 1,
             y: 0,
           }}
-          viewport={{ once: true }}
+          viewport={{
+            once: true,
+          }}
           transition={{
             duration: 0.6,
             delay: 0.1,
@@ -201,18 +327,24 @@ const TrackComplaint = () => {
           className="track-search-card"
         >
           <div className="track-search-input">
-            <Search size={20} />
+            <Search
+              size={20}
+            />
 
             <input
               type="text"
-              value={complaintId}
+              value={
+                complaintId
+              }
               onChange={(e) =>
                 setComplaintId(
                   e.target.value.toUpperCase()
                 )
               }
               onKeyDown={(e) => {
-                if (e.key === "Enter") {
+                if (
+                  e.key === "Enter"
+                ) {
                   findComplaint();
                 }
               }}
@@ -221,7 +353,9 @@ const TrackComplaint = () => {
           </div>
 
           <button
-            onClick={findComplaint}
+            onClick={
+              findComplaint
+            }
             className="track-search-button"
           >
             Track Complaint
@@ -230,7 +364,10 @@ const TrackComplaint = () => {
 
         {error && (
           <div className="track-error">
-            <XCircle size={16} />
+            <XCircle
+              size={16}
+            />
+
             {error}
           </div>
         )}
@@ -261,89 +398,292 @@ const TrackComplaint = () => {
                   </span>
 
                   <h3>
-                    {report.title}
+                    {
+                      report.title
+                    }
                   </h3>
 
                   <div className="tracked-id">
-                    {report.complaintId}
+                    {
+                      report.complaintId
+                    }
                   </div>
                 </div>
 
                 <div
                   className={`tracked-status ${report.status
                     .toLowerCase()
-                    .replaceAll(" ", "-")}`}
+                    .replaceAll(
+                      " ",
+                      "-"
+                    )}`}
                 >
-                  {getStatusIcon()}
+                  {
+                    getStatusIcon()
+                  }
+
                   <span>
-                    {report.status}
+                    {
+                      report.status
+                    }
                   </span>
                 </div>
               </div>
 
               <div className="tracked-info-grid">
                 <div>
-                  <MapPin size={16} />
-                  <span>Location</span>
+                  <MapPin
+                    size={16}
+                  />
+
+                  <span>
+                    Location
+                  </span>
+
                   <strong>
-                    {report.location}
+                    {
+                      report.location
+                    }
                   </strong>
                 </div>
 
                 <div>
-                  <AlertTriangle size={16} />
-                  <span>Severity</span>
+                  <AlertTriangle
+                    size={16}
+                  />
+
+                  <span>
+                    Severity
+                  </span>
+
                   <strong>
-                    {report.severity}
+                    {
+                      report.severity
+                    }
                   </strong>
                 </div>
 
                 <div>
-                  <ShieldCheck size={16} />
-                  <span>Priority</span>
+                  <ShieldCheck
+                    size={16}
+                  />
+
+                  <span>
+                    Priority
+                  </span>
+
                   <strong>
-                    {report.priority}
+                    {
+                      report.priority
+                    }
                   </strong>
                 </div>
 
                 <div>
-                  <CheckCircle2 size={16} />
-                  <span>AI Confidence</span>
+                  <CheckCircle2
+                    size={16}
+                  />
+
+                  <span>
+                    AI Confidence
+                  </span>
+
                   <strong>
-                    {report.confidence}%
+                    {
+                      report.confidence
+                    }%
                   </strong>
                 </div>
               </div>
 
+              {report.coordinates && (
+                <div className="tracking-location-panel">
+                  <div className="tracking-location-title">
+                    <Navigation
+                      size={18}
+                    />
+
+                    <div>
+                      <span>
+                        GPS LOCATION
+                      </span>
+
+                      <strong>
+                        Civic Issue
+                        Coordinates
+                      </strong>
+                    </div>
+                  </div>
+
+                  <div className="tracking-coordinate-grid">
+                    <div>
+                      <span>
+                        Latitude
+                      </span>
+
+                      <strong>
+                        {Number(
+                          report
+                            .coordinates
+                            .latitude
+                        ).toFixed(
+                          5
+                        )}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>
+                        Longitude
+                      </span>
+
+                      <strong>
+                        {Number(
+                          report
+                            .coordinates
+                            .longitude
+                        ).toFixed(
+                          5
+                        )}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {report.assignedDepartment ? (
+                <div className="tracking-department-panel">
+                  <div className="tracking-department-icon">
+                    <Building2
+                      size={24}
+                    />
+                  </div>
+
+                  <div className="tracking-department-content">
+                    <span>
+                      AUTO ASSIGNED
+                      CIVIC DEPARTMENT
+                    </span>
+
+                    <h4>
+                      {
+                        report
+                          .assignedDepartment
+                          .name
+                      }
+                    </h4>
+
+                    <div className="department-meta-row">
+                      <div>
+                        <Navigation
+                          size={14}
+                        />
+
+                        <span>
+                          {
+                            report
+                              .assignedDepartment
+                              .distance
+                          }{" "}
+                          km away
+                        </span>
+                      </div>
+
+                      <div>
+                        <Phone
+                          size={14}
+                        />
+
+                        <span>
+                          {
+                            report
+                              .assignedDepartment
+                              .contact
+                          }
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="tracking-no-department">
+                  <Building2
+                    size={19}
+                  />
+
+                  <div>
+                    <strong>
+                      Department
+                      assignment
+                      pending
+                    </strong>
+
+                    <span>
+                      This report
+                      does not have
+                      GPS-based civic
+                      routing data.
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {report.coordinates &&
+                report.assignedDepartment && (
+                  <RoutingMap
+                    coordinates={
+                      report.coordinates
+                    }
+                    department={
+                      report.assignedDepartment
+                    }
+                  />
+                )}
+
               <div className="tracked-main-grid">
                 <div className="tracked-timeline-card">
                   <h4>
-                    Resolution Timeline
+                    Resolution
+                    Timeline
                   </h4>
 
                   <div className="tracked-timeline">
-                    {(report.timeline || []).map(
-                      (item, index) => (
+                    {(
+                      report.timeline ||
+                      []
+                    ).map(
+                      (
+                        item,
+                        index
+                      ) => (
                         <div
-                          key={index}
+                          key={
+                            index
+                          }
                           className={`tracked-timeline-item ${item.status}`}
                         >
                           <div className="tracked-timeline-marker">
                             {item.status ===
                             "completed" ? (
                               <CheckCircle2
-                                size={16}
+                                size={
+                                  16
+                                }
                               />
                             ) : (
                               <Clock3
-                                size={16}
+                                size={
+                                  16
+                                }
                               />
                             )}
                           </div>
 
                           <div>
                             <strong>
-                              {item.title}
+                              {
+                                item.title
+                              }
                             </strong>
 
                             <span>
@@ -366,12 +706,17 @@ const TrackComplaint = () => {
                     </span>
 
                     <h4>
-                      Admin Status Simulator
+                      Authority Status
+                      Simulator
                     </h4>
 
                     <p>
-                      Simulate the municipal workflow
-                      during your hackathon demo.
+                      Simulate the
+                      municipal workflow
+                      and show how the
+                      complaint progresses
+                      from submission to
+                      resolution.
                     </p>
                   </div>
 
@@ -389,12 +734,15 @@ const TrackComplaint = () => {
                         )
                       }
                     >
-                      <Clock3 size={17} />
+                      <Clock3
+                        size={17}
+                      />
 
                       <div>
                         <strong>
                           Reported
                         </strong>
+
                         <span>
                           Complaint received
                         </span>
@@ -414,14 +762,17 @@ const TrackComplaint = () => {
                         )
                       }
                     >
-                      <Wrench size={17} />
+                      <Wrench
+                        size={17}
+                      />
 
                       <div>
                         <strong>
                           In Progress
                         </strong>
+
                         <span>
-                          Department assigned
+                          Civic team working
                         </span>
                       </div>
                     </button>
@@ -439,12 +790,15 @@ const TrackComplaint = () => {
                         )
                       }
                     >
-                      <CheckCircle2 size={17} />
+                      <CheckCircle2
+                        size={17}
+                      />
 
                       <div>
                         <strong>
                           Resolved
                         </strong>
+
                         <span>
                           Issue fixed
                         </span>
@@ -454,8 +808,12 @@ const TrackComplaint = () => {
 
                   {report.image && (
                     <img
-                      src={report.image}
-                      alt={report.title}
+                      src={
+                        report.image
+                      }
+                      alt={
+                        report.title
+                      }
                       className="admin-report-image"
                     />
                   )}
