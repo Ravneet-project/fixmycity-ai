@@ -166,29 +166,46 @@ const ReportIssue = () => {
     setLocationError("");
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const latitude =
-          position.coords.latitude;
+      async (position) => {
+        try {
+          const latitude =
+            position.coords.latitude;
 
-        const longitude =
-          position.coords.longitude;
+          const longitude =
+            position.coords.longitude;
 
-        setCoordinates({
-          latitude,
-          longitude,
-        });
+          setCoordinates({
+            latitude,
+            longitude,
+          });
 
-        setLocation(
-          `${latitude.toFixed(
-            5
-          )}, ${longitude.toFixed(
-            5
-          )}`
-        );
+          const detectedAddress =
+            await getAddressFromCoordinates(
+              latitude,
+              longitude
+            );
 
-        setGettingLocation(
-          false
-        );
+          setLocation(
+            detectedAddress
+          );
+
+          setLocationDetected(
+            true
+          );
+        } catch (error) {
+          console.error(
+            "Location processing error:",
+            error
+          );
+
+          setLocationError(
+            "Location was detected, but the address could not be identified."
+          );
+        } finally {
+          setGettingLocation(
+            false
+          );
+        }
       },
 
       (error) => {
@@ -197,8 +214,26 @@ const ReportIssue = () => {
           error
         );
 
+        let message =
+          "Unable to access your location.";
+
+        if (error.code === 1) {
+          message =
+            "Location permission was denied. Please allow location access in your browser.";
+        }
+
+        if (error.code === 2) {
+          message =
+            "Your current location is unavailable. Please try again.";
+        }
+
+        if (error.code === 3) {
+          message =
+            "Location detection timed out. Please try again.";
+        }
+
         setLocationError(
-          "Unable to access your location. Please allow location permission."
+          message
         );
 
         setGettingLocation(
@@ -208,7 +243,7 @@ const ReportIssue = () => {
 
       {
         enableHighAccuracy: true,
-        timeout: 10000,
+        timeout: 15000,
         maximumAge: 30000,
       }
     );
@@ -284,6 +319,8 @@ const ReportIssue = () => {
 
             category:
               result.category,
+
+            location,
           });
       }
 
@@ -310,8 +347,14 @@ const ReportIssue = () => {
                 id:
                   assignedDepartment.id,
 
+                city:
+                  assignedDepartment.city,
+
                 name:
                   assignedDepartment.name,
+
+                category:
+                  assignedDepartment.category,
 
                 contact:
                   assignedDepartment.contact,
@@ -322,6 +365,12 @@ const ReportIssue = () => {
                       2
                     )
                   ),
+
+                latitude:
+                  assignedDepartment.latitude,
+
+                longitude:
+                  assignedDepartment.longitude,
               }
             : null,
 
@@ -463,6 +512,10 @@ const ReportIssue = () => {
     );
 
     setLocationError("");
+
+    setLocationDetected(
+      false
+    );
   };
 
   return (
@@ -577,12 +630,13 @@ const ReportIssue = () => {
                     value={
                       location
                     }
-                    onChange={(
-                      e
-                    ) => {
+                    onChange={(e) => {
                       setLocation(
-                        e.target
-                          .value
+                        e.target.value
+                      );
+
+                      setLocationDetected(
+                        false
                       );
                     }}
                     placeholder="Enter location or use GPS"
@@ -627,27 +681,25 @@ const ReportIssue = () => {
                   </div>
                 )}
 
-                {coordinates && (
-                  <div className="coordinate-preview">
-                    <MapPin
-                      size={14}
-                    />
+                {coordinates &&
+                  locationDetected &&
+                  location && (
+                    <div className="detected-location-card">
+                      <MapPin
+                        size={16}
+                      />
 
-                    <span>
-                      Latitude:{" "}
-                      {coordinates.latitude.toFixed(
-                        5
-                      )}
-                    </span>
+                      <div>
+                        <span>
+                          LOCATION DETECTED
+                        </span>
 
-                    <span>
-                      Longitude:{" "}
-                      {coordinates.longitude.toFixed(
-                        5
-                      )}
-                    </span>
-                  </div>
-                )}
+                        <strong>
+                          {location}
+                        </strong>
+                      </div>
+                    </div>
+                  )}
               </div>
 
               <div className="form-group">
@@ -659,12 +711,9 @@ const ReportIssue = () => {
                   value={
                     description
                   }
-                  onChange={(
-                    e
-                  ) =>
+                  onChange={(e) =>
                     setDescription(
-                      e.target
-                        .value
+                      e.target.value
                     )
                   }
                   placeholder="Describe the issue..."
@@ -944,6 +993,24 @@ const ReportIssue = () => {
                     </strong>
                   </div>
 
+                  <div className="submitted-location-card">
+                    <MapPin
+                      size={16}
+                    />
+
+                    <div>
+                      <span>
+                        REPORTED LOCATION
+                      </span>
+
+                      <strong>
+                        {
+                          submittedReport.location
+                        }
+                      </strong>
+                    </div>
+                  </div>
+
                   {submittedReport.assignedDepartment && (
                     <div className="assigned-department-card">
                       <span>
@@ -960,6 +1027,11 @@ const ReportIssue = () => {
                       </strong>
 
                       <small>
+                        {submittedReport
+                          .assignedDepartment
+                          .city
+                          ? `${submittedReport.assignedDepartment.city} • `
+                          : ""}
                         {
                           submittedReport
                             .assignedDepartment

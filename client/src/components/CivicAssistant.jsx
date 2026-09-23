@@ -14,7 +14,18 @@ import {
   Lightbulb,
   Droplets,
   ArrowRight,
+  Search,
+  CheckCircle2,
+  Clock3,
+  Wrench,
+  Building2,
+  MapPin,
+  ShieldAlert,
 } from "lucide-react";
+
+import {
+  getSavedReports,
+} from "../utils/reportStorage";
 
 const suggestions = [
   {
@@ -55,7 +66,8 @@ const detectIssue = (message) => {
       reply:
         "I detected a possible road damage issue. I'll prepare the report form for you.",
 
-      confidence: 96,
+      confidence:
+        96,
     };
   }
 
@@ -76,7 +88,8 @@ const detectIssue = (message) => {
       reply:
         "This looks like a waste management issue. I'll prefill the civic report for you.",
 
-      confidence: 94,
+      confidence:
+        94,
     };
   }
 
@@ -96,7 +109,8 @@ const detectIssue = (message) => {
       reply:
         "I detected a street-lighting problem. Let's prepare a report for the lighting department.",
 
-      confidence: 93,
+      confidence:
+        93,
     };
   }
 
@@ -118,7 +132,8 @@ const detectIssue = (message) => {
       reply:
         "This appears to be a water or drainage issue. I'll prepare the report details.",
 
-      confidence: 95,
+      confidence:
+        95,
     };
   }
 
@@ -132,8 +147,24 @@ const detectIssue = (message) => {
     reply:
       "I understand that you're reporting a civic issue. I'll open the report form so you can add a photo and location.",
 
-    confidence: 82,
+    confidence:
+      82,
   };
+};
+
+const extractComplaintId = (
+  message
+) => {
+  const match =
+    message
+      .toUpperCase()
+      .match(
+        /FMC-\d{4}-\d{6}/
+      );
+
+  return match
+    ? match[0]
+    : null;
 };
 
 const CivicAssistant = () => {
@@ -143,27 +174,165 @@ const CivicAssistant = () => {
   const [message, setMessage] =
     useState("");
 
-  const [messages, setMessages] =
-    useState([
+  const [
+    messages,
+    setMessages,
+  ] = useState([
+    {
+      type: "bot",
+
+      text:
+        "Hi 👋 I'm the FixMyCity AI Assistant. Tell me about a civic issue or enter your complaint ID to track it.",
+    },
+  ]);
+
+  const [
+    detected,
+    setDetected,
+  ] = useState(null);
+
+  const [
+    trackedReport,
+    setTrackedReport,
+  ] = useState(null);
+
+  const [
+    trackingError,
+    setTrackingError,
+  ] = useState("");
+
+  const addMessages = (
+    newMessages
+  ) => {
+    setMessages(
+      (current) => [
+        ...current,
+        ...newMessages,
+      ]
+    );
+  };
+
+  const findComplaint = (
+    id
+  ) => {
+    const reports =
+      getSavedReports();
+
+    const found =
+      reports.find(
+        (item) =>
+          item.complaintId
+            ?.toUpperCase() ===
+          id.toUpperCase()
+      );
+
+    if (!found) {
+      setTrackedReport(
+        null
+      );
+
+      setDetected(null);
+
+      setTrackingError(
+        `I couldn't find complaint ${id}. Please check the complaint ID and try again.`
+      );
+
+      addMessages([
+        {
+          type: "bot",
+          text:
+            `I couldn't find complaint ${id}. Please check the complaint ID and try again.`,
+        },
+      ]);
+
+      return;
+    }
+
+    setTrackingError("");
+
+    setDetected(null);
+
+    setTrackedReport(
+      found
+    );
+
+    addMessages([
       {
         type: "bot",
 
         text:
-          "Hi 👋 I'm the FixMyCity AI Assistant. Tell me what's wrong in your area and I'll help create the report.",
+          `I found complaint ${found.complaintId}. Its current status is ${found.status}.`,
       },
     ]);
-
-  const [detected, setDetected] =
-    useState(null);
+  };
 
   const handleMessage = (
     customMessage = null
   ) => {
     const finalMessage =
-      customMessage ||
-      message.trim();
+      (
+        customMessage ||
+        message
+      ).trim();
 
     if (!finalMessage) {
+      return;
+    }
+
+    setMessage("");
+
+    addMessages([
+      {
+        type: "user",
+        text:
+          finalMessage,
+      },
+    ]);
+
+    const complaintId =
+      extractComplaintId(
+        finalMessage
+      );
+
+    if (complaintId) {
+      findComplaint(
+        complaintId
+      );
+
+      return;
+    }
+
+    const lowerMessage =
+      finalMessage
+        .toLowerCase();
+
+    const statusIntent =
+      lowerMessage.includes(
+        "status"
+      ) ||
+      lowerMessage.includes(
+        "track"
+      ) ||
+      lowerMessage.includes(
+        "complaint"
+      );
+
+    if (statusIntent) {
+      setDetected(null);
+
+      setTrackedReport(
+        null
+      );
+
+      addMessages([
+        {
+          type: "bot",
+
+          text:
+            "Please enter your complaint ID, for example FMC-2026-123456, and I'll check its latest status.",
+        },
+      ]);
+
       return;
     }
 
@@ -172,29 +341,24 @@ const CivicAssistant = () => {
         finalMessage
       );
 
-    setMessages(
-      (current) => [
-        ...current,
-
-        {
-          type: "user",
-          text:
-            finalMessage,
-        },
-
-        {
-          type: "bot",
-          text:
-            analysis.reply,
-        },
-      ]
+    setTrackedReport(
+      null
     );
+
+    setTrackingError("");
 
     setDetected(
       analysis
     );
 
-    setMessage("");
+    addMessages([
+      {
+        type: "bot",
+
+        text:
+          analysis.reply,
+      },
+    ]);
   };
 
   const startReport = () => {
@@ -233,6 +397,73 @@ const CivicAssistant = () => {
     setOpen(false);
   };
 
+  const openTracking = () => {
+    if (
+      !trackedReport
+    ) {
+      return;
+    }
+
+    const trackSection =
+      document.getElementById(
+        "track"
+      );
+
+    if (
+      trackSection
+    ) {
+      trackSection.scrollIntoView({
+        behavior:
+          "smooth",
+
+        block:
+          "start",
+      });
+    }
+
+    setOpen(false);
+  };
+
+  const getStatusIcon = () => {
+    if (
+      !trackedReport
+    ) {
+      return (
+        <Clock3
+          size={17}
+        />
+      );
+    }
+
+    if (
+      trackedReport.status ===
+      "Resolved"
+    ) {
+      return (
+        <CheckCircle2
+          size={17}
+        />
+      );
+    }
+
+    if (
+      trackedReport.status ===
+      "In Progress"
+    ) {
+      return (
+        <Wrench
+          size={17}
+        />
+      );
+    }
+
+    return (
+      <Clock3
+        size={17}
+      />
+    );
+  };
+
   return (
     <>
       <motion.button
@@ -248,6 +479,7 @@ const CivicAssistant = () => {
         whileTap={{
           scale: 0.94,
         }}
+        aria-label="Open FixMyCity AI Assistant"
       >
         <span className="assistant-trigger-glow"></span>
 
@@ -309,6 +541,7 @@ const CivicAssistant = () => {
               </div>
 
               <button
+                type="button"
                 onClick={() =>
                   setOpen(
                     false
@@ -326,7 +559,8 @@ const CivicAssistant = () => {
                 size={13}
               />
 
-              AI-powered civic issue assistance
+              Civic reporting &
+              complaint tracking
             </div>
 
             <div className="assistant-messages">
@@ -409,6 +643,7 @@ const CivicAssistant = () => {
                   </div>
 
                   <button
+                    type="button"
                     onClick={
                       startReport
                     }
@@ -416,57 +651,205 @@ const CivicAssistant = () => {
                     Continue to Report
 
                     <ArrowRight
-                      size={
-                        15
-                      }
+                      size={15}
                     />
                   </button>
                 </motion.div>
               )}
+
+              {trackedReport && (
+                <motion.div
+                  initial={{
+                    opacity: 0,
+                    y: 10,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  className="assistant-tracking-card"
+                >
+                  <div className="assistant-tracking-top">
+                    <div>
+                      <span>
+                        COMPLAINT FOUND
+                      </span>
+
+                      <strong>
+                        {
+                          trackedReport.complaintId
+                        }
+                      </strong>
+                    </div>
+
+                    <div
+                      className={`assistant-status-chip ${trackedReport.status
+                        .toLowerCase()
+                        .replaceAll(
+                          " ",
+                          "-"
+                        )}`}
+                    >
+                      {
+                        getStatusIcon()
+                      }
+
+                      {
+                        trackedReport.status
+                      }
+                    </div>
+                  </div>
+
+                  <h4>
+                    {
+                      trackedReport.title
+                    }
+                  </h4>
+
+                  <div className="assistant-tracking-info">
+                    <div>
+                      <MapPin
+                        size={14}
+                      />
+
+                      <span>
+                        {
+                          trackedReport.location
+                        }
+                      </span>
+                    </div>
+
+                    <div>
+                      <ShieldAlert
+                        size={14}
+                      />
+
+                      <span>
+                        {
+                          trackedReport.priority
+                        }{" "}
+                        Priority
+                      </span>
+                    </div>
+                  </div>
+
+                  {trackedReport.assignedDepartment && (
+                    <div className="assistant-department-mini">
+                      <Building2
+                        size={15}
+                      />
+
+                      <div>
+                        <span>
+                          Assigned Department
+                        </span>
+
+                        <strong>
+                          {
+                            trackedReport
+                              .assignedDepartment
+                              .name
+                          }
+                        </strong>
+
+                        <small>
+                          {
+                            trackedReport
+                              .assignedDepartment
+                              .distance
+                          }{" "}
+                          km away
+                        </small>
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    className="assistant-track-full-button"
+                    onClick={
+                      openTracking
+                    }
+                  >
+                    <Search
+                      size={15}
+                    />
+
+                    Track Full Report
+
+                    <ArrowRight
+                      size={15}
+                    />
+                  </button>
+                </motion.div>
+              )}
+
+              {trackingError && (
+                <div className="assistant-tracking-error">
+                  {
+                    trackingError
+                  }
+                </div>
+              )}
             </div>
 
-            {!detected && (
-              <div className="assistant-suggestions">
-                <span>
-                  TRY SAYING
-                </span>
+            {!detected &&
+              !trackedReport && (
+                <div className="assistant-suggestions">
+                  <span>
+                    TRY SAYING
+                  </span>
 
-                <div>
-                  {suggestions.map(
-                    (
-                      item,
-                      index
-                    ) => {
-                      const Icon =
-                        item.icon;
+                  <div>
+                    {suggestions.map(
+                      (
+                        item,
+                        index
+                      ) => {
+                        const Icon =
+                          item.icon;
 
-                      return (
-                        <button
-                          key={
-                            index
-                          }
-                          onClick={() =>
-                            handleMessage(
-                              item.text
-                            )
-                          }
-                        >
-                          <Icon
-                            size={
-                              14
+                        return (
+                          <button
+                            type="button"
+                            key={
+                              index
                             }
-                          />
+                            onClick={() =>
+                              handleMessage(
+                                item.text
+                              )
+                            }
+                          >
+                            <Icon
+                              size={14}
+                            />
 
-                          {
-                            item.text
-                          }
-                        </button>
-                      );
-                    }
-                  )}
+                            {
+                              item.text
+                            }
+                          </button>
+                        );
+                      }
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMessage(
+                          "What is the status of FMC-2026-123456?"
+                        )
+                      }
+                    >
+                      <Search
+                        size={14}
+                      />
+
+                      Check complaint status
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             <div className="assistant-input-area">
               <input
@@ -474,17 +857,12 @@ const CivicAssistant = () => {
                 value={
                   message
                 }
-                onChange={(
-                  e
-                ) =>
+                onChange={(e) =>
                   setMessage(
-                    e.target
-                      .value
+                    e.target.value
                   )
                 }
-                onKeyDown={(
-                  e
-                ) => {
+                onKeyDown={(e) => {
                   if (
                     e.key ===
                     "Enter"
@@ -492,10 +870,11 @@ const CivicAssistant = () => {
                     handleMessage();
                   }
                 }}
-                placeholder="Describe a civic problem..."
+                placeholder="Report an issue or enter complaint ID..."
               />
 
               <button
+                type="button"
                 onClick={() =>
                   handleMessage()
                 }

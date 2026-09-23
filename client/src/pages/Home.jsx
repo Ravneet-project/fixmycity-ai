@@ -7,6 +7,8 @@ import ImpactSection from "../sections/ImpactSection";
 import Footer from "../sections/Footer";
 import TrackComplaint from "../sections/TrackComplaint";
 import CivicAssistant from "../components/CivicAssistant";
+import CityIssuesMap from "../components/CityIssuesMap";
+
 const Home = () => {
   return (
     <div className="app-shell">
@@ -23,6 +25,7 @@ const Home = () => {
         <ExploreIssues />
         <TrackComplaint />
         <ImpactSection />
+        <CityIssuesMap/>
       </main>
 
       <Footer />
